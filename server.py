@@ -41,7 +41,7 @@ def create_user():
                 )
                 conn.commit()
 
-        return jsonify({"success": True, "message": "User created successfully"})
+        return jsonify({"success": True, "message": "User created successfully", "user_email": user_email})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
     
