@@ -45,6 +45,23 @@ def create_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
     
+# Endpoint to get user information from database
+@app.route("/user_info/<user_email>", methods=["GET"])
+def user_info(user_email):
+    try:
+        # Store the data in the database
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT * FROM users WHERE user_email LIKE '{user_email}'"
+                )
+                user_info = cur.fetchone()
+
+        return jsonify({"success": True, "message": "User information retrieved successfully", "user_info": user_info})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    
+
 # Endpoint to store calories of user and update if already exists
 @app.route("/store_calories", methods=["POST"])
 def store_calories():
