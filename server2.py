@@ -1,34 +1,46 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, session, render_template, request, redirect, url_for, flash, jsonify
+import psycopg2
+import os, hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
-from dotenv import load_dotenv
-import os
-load_dotenv()
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
-app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@{os.getenv("DB_HOST")}:{os.getenv("DB_PORT")}/{os.getenv("DB_NAME")}'  # Use SQLite for simplicity
-db = SQLAlchemy(app)
+app.config['SECRET_KEY'] = 'your_secret_key'
 
-print("Database initialized")
+# Replace with your PostgreSQL connection string
+DATABASE_URL = os.getenv("DATABASE_URL", f'postgresql://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@{os.getenv("DB_HOST")}:{os.getenv("DB_PORT")}/{os.getenv("DB_NAME")}')
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+def create_connection():
+    return psycopg2.connect(DATABASE_URL)
+
+def execute_query(query, params=None):
+    conn = create_connection()
+    cur = conn.cursor()
+
+    if params:
+        cur.execute(query, params)
+    else:
+        cur.execute(query)
+
+    conn.commit()
+    try:
+        result = cur.fetchall()
+    except:
+        result = None
+    cur.close()
+    conn.close()
+
+    return result
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
 
-        hashed_password = generate_password_hash(password, method='sha256')
-        new_user = User(username=username, password=hashed_password)
-
-        db.session.add(new_user)
-        db.session.commit()
+        password = password.encode('utf-8')
+        hashed_password = hashlib.sha256(password).hexdigest()
+        execute_query("INSERT INTO users (user_email, password) VALUES (%s, %s) ON CONFLICT(user_email) DO NOTHING", (email, hashed_password))
 
         flash('Registration successful. Please log in.', 'success')
         return redirect(url_for('login'))
@@ -38,13 +50,17 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
 
-        user = User.query.filter_by(username=username).first()
+        password = password.encode('utf-8')
+        hashed_password = hashlib.sha256(password).hexdigest()
+        user = execute_query("SELECT * FROM users WHERE user_email = %s", (email,))
 
-        if user and check_password_hash(user.password, password):
+        if user and user[0][-1] == hashed_password:
             flash('Login successful!', 'success')
+            # Add user_email to the session
+            session['user_email'] = email
             # Here you can add code to create a session or perform other actions upon successful login
             return redirect(url_for('dashboard'))
         else:
@@ -52,10 +68,33 @@ def login():
 
     return render_template('login.html')
 
+@app.route("/store_calories", methods=["POST"])
+def store_calories():
+    try:
+        data = request.get_json()
+        user_email = data.get("user_email")
+        calories = data.get("calories")
+
+        print(user_email)
+        print(calories)
+        # Store the data in the database
+        with create_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    #deal with the conflict if the user already exists
+                    "INSERT INTO calories (user_email, calories) VALUES ( %s, %s) ON CONFLICT (user_email) DO UPDATE SET calories = %s",
+                    (user_email, calories, calories)
+                    )
+                conn.commit()
+
+        return jsonify({"success": True, "message": "Calories stored successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    
+
 @app.route('/dashboard')
 def dashboard():
     return 'Welcome to the Dashboard!'
 
 if __name__ == '__main__':
-    db.create_all()
     app.run(debug=True)
