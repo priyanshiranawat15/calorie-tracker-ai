@@ -1,14 +1,8 @@
-
 # Calorie Tracker
 
-
-## Feature Branches
-
-- `main` - The main branch of the project
-- `feature` - The feature branch in progress of integrating the streamlit app with the server
-    - This branch is currently in progress and is not yet merged with the main branch. I have added authentication using flask and aiming to integrate the streamlit app with the server.
-    - I have added the feature to add food items and their calories to the database. In progress of adding the feature to view the food items and their calories from the database.
-    - New Template to be added are in progress. Namely; home.html and user_info.html
+### ChatGPT prompt history:
+- [Flask server](https://chat.openai.com/share/c587332e-4dff-477f-8523-6e8504f43457)
+- [Adding Features](https://chat.openai.com/share/25b3a610-2bd8-4e3c-9f36-36c16522e580)
 
 Welcome to the Calorie Tracker project! This project aims to help you keep track of your daily calorie intake. Set your calorie goals, track your daily intake with one capture of what you eat, and view your calorie history.
 
