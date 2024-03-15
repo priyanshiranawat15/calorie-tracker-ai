@@ -21,6 +21,7 @@ def get_gemini_resp(prompt, image):
 
 # Function to set up image data
 def input_image_setup(uploaded_file):
+    print(type(uploaded_file))
     if uploaded_file is not None:
         bytes_data = uploaded_file.getvalue()
 
@@ -38,7 +39,6 @@ def input_image_setup(uploaded_file):
 st.set_page_config(page_title="Gemini Calorie Tracker", page_icon="🍏")
 # Title and header with user information
 st.title("Gemini Calorie Tracker")
-
 
         
 # File uploader for image
@@ -67,7 +67,7 @@ input_prompt = """
     
     and also mention the percentage split of the ratio of carbohydrates, fats, fibers, sugar and other things required in our diet 
     Finally you can also mention whether the food is healthy or not!
-    If you are done with the above, please enter the total calories of the food item like *Total calories: 1000 in the end
+    If you are done with the above, please enter the total calories of the food item like *Total calories: 1000 (just the number as it is directly stored in database as an integer) in the end
     """
 
 # Process query and display response
@@ -85,6 +85,7 @@ if submit_query:
 
         user_data = {"user_email": 'd@gmail.com', "calories": calories}
         response_server = requests.post(f"{FLASK_SERVER_URL}/store_calories", json=user_data)
+        st.write(response_server.json())
         st.header("Response")
         st.write(resp)
 

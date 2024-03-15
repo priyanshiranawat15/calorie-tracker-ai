@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Calorie Tracker</title>
+</head>
+<body>
+    <h1>Gemini Calorie Tracker</h1>
+    
+    <form id="geminiForm">
+        <label for="image">Choose an image:</label>
+        <input type="file" id="image" name="image" accept="image/*">
+        
+        <button type="button" onclick="submitForm()">Submit</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        function submitForm() {
+            const form = document.getElementById('geminiForm');
+            const formData = new FormData(form);
+            const responseDiv = document.getElementById('response');
+
+            // Show loading message
+            responseDiv.innerHTML = '<h2>Loading...</h2>';
+            // only send the image as bytes
+            console.log(formData.get('image'));
+            fetch('http://localhost:5000/upload_image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display response
+                responseDiv.innerHTML = `<h2>Response</h2><p>${data.response}</p>`;
+            })
+            .catch(error => {
+                // Display error message
+                responseDiv.innerHTML = `<h2>Error</h2><p>${error}</p>`;
+                console.error('Error:', error);
+            });
+        }
+
+    </script>
+</body>
+</html>
