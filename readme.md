@@ -1,12 +1,5 @@
 # Calorie Tracker
 
-
-### ChatGPT prompt history:
-- [Flask server](https://chat.openai.com/share/c587332e-4dff-477f-8523-6e8504f43457)
-- [Adding Features](https://chat.openai.com/share/25b3a610-2bd8-4e3c-9f36-36c16522e580)
-
-=======
-
 Welcome to the Calorie Tracker project! This project aims to help you keep track of your daily calorie intake. Set your calorie goals, track your daily intake with one capture of what you eat, and view your calorie history.
 
 ## Features
