@@ -21,6 +21,7 @@ def get_gemini_resp(prompt, image):
 
 # Function to set up image data
 def input_image_setup(uploaded_file):
+    print(type(uploaded_file))
     if uploaded_file is not None:
         bytes_data = uploaded_file.getvalue()
 
@@ -39,36 +40,6 @@ st.set_page_config(page_title="Gemini Calorie Tracker", page_icon="🍏")
 # Title and header with user information
 st.title("Gemini Calorie Tracker")
 
-# User information to create a user using the Flask API /create_user
-st.header("User Information")
-user_name = st.text_input("Enter your name:")
-user_email = st.text_input("Enter your email:")
-submit_user = st.button("Submit", key=1)
-
-if submit_user:
-    user_data = {"user_name": user_name, "user_email": user_email}
-    resp = requests.post(f"{FLASK_SERVER_URL}/create_user", json=user_data)
-
-    # Store user_email in session
-    st.session_state.user_email = resp.json().get("user_email")
-
-    st.success(f"Logged in as User: {st.session_state.user_email}")
-    logout_button = st.button("Logout")
-
-    if logout_button:
-        # Remove user_id from session
-        del st.session_state.user_email
-        st.success("Logged out successfully!")
-
-    # get user information from database get /user_info
-    if st.session_state.user_email:
-        user_info = requests.get(f"{FLASK_SERVER_URL}/user_info/{st.session_state.user_email}")
-
-        # Display user information as a table
-        st.header("User Information")
-        # columnsnames in table
-        print(user_info.json().get("user_info"))
-        st.table([["ID","Name","Email","Calories"],user_info.json().get("user_info")])
         
 # File uploader for image
 upload_file = st.file_uploader("Choose an image:", type=['jpg', 'png', 'jpeg'])
@@ -96,7 +67,7 @@ input_prompt = """
     
     and also mention the percentage split of the ratio of carbohydrates, fats, fibers, sugar and other things required in our diet 
     Finally you can also mention whether the food is healthy or not!
-    If you are done with the above, please enter the total calories of the food item like *Total calories: 1000
+    If you are done with the above, please enter the total calories of the food item like *Total calories: 1000 (just the number as it is directly stored in database as an integer) in the end
     """
 
 # Process query and display response
@@ -112,8 +83,9 @@ if submit_query:
 
         calories = resp.split("Total calories:")[1].split("\n")[0]
 
-        user_data = {"user_name": user_name, "user_email": user_email, "calories": calories}
+        user_data = {"user_email": 'd@gmail.com', "calories": calories}
         response_server = requests.post(f"{FLASK_SERVER_URL}/store_calories", json=user_data)
+        st.write(response_server.json())
         st.header("Response")
         st.write(resp)
 

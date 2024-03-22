@@ -3,3 +3,4 @@ google.generativeai
 python-dotenv
 flask
 psycopg2
+flask_cors
