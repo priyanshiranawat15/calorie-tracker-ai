@@ -2,5 +2,5 @@ streamlit
 google.generativeai
 python-dotenv
 flask
-psycopg2
+psycopg2-binary
 flask_cors
