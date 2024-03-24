@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()  # Loading all the environment variables
 from PIL import Image
 import requests
+from server import get_db_connection
+import pandas as pd
+import plotly.express as px
 
 # Set the FLASK_SERVER_URL
 FLASK_SERVER_URL = os.getenv("FLASK_SERVER_URL")
@@ -36,7 +39,7 @@ def input_image_setup(uploaded_file):
         raise FileNotFoundError("No file found")
 
 # Set Streamlit page configuration
-st.set_page_config(page_title="Gemini Calorie Tracker", page_icon="🍏")
+st.set_page_config(page_title="Track My Calorie", page_icon="🍏")
 # Title and header with user information
 st.title("Gemini Calorie Tracker")
 
@@ -70,6 +73,30 @@ input_prompt = """
     If you are done with the above, please enter the total calories of the food item like *Total calories: 1000 (just the number as it is directly stored in database as an integer) in the end
     """
 
+def visualize():
+    conn = get_db_connection()
+    avg_per_day_df = pd.read_sql_query(
+        """SELECT to_char(time_stamp, 'YYYY-MM-DD') AS date,
+            AVG(calories) AS average_calories
+        FROM calories
+        GROUP BY date;""",
+        conn
+    )
+
+    avg_per_weekday_df = pd.read_sql_query(
+        """
+        SELECT EXTRACT(DOW FROM time_stamp) AS day_of_week, 
+            AVG(calories) AS average_calories 
+        FROM calories 
+        GROUP BY day_of_week;
+        """,
+        conn
+    )
+    conn.close()
+
+    return avg_per_day_df, avg_per_weekday_df
+
+
 # Process query and display response
 if submit_query:
     with st.spinner('Generating response...'):
@@ -82,6 +109,7 @@ if submit_query:
             resp = get_gemini_resp(prompt=input_prompt, image=image_data)
 
         calories = resp.split("Total calories:")[1].split("\n")[0]
+        print(calories)
 
         user_data = {"user_email": 'd@gmail.com', "calories": calories}
         response_server = requests.post(f"{FLASK_SERVER_URL}/store_calories", json=user_data)
@@ -92,6 +120,21 @@ if submit_query:
 # Follow-up conversation with AI
 follow_up_query = st.text_input("Continue the conversation:")
 follow_up_submit = st.button("Submit", key=3)
+
+# sidebar to display stats of calories per day, per week and per month
+avg_per_day_df, avg_per_weekday_df = visualize()
+
+st.sidebar.title("Calories Stats")
+st.sidebar.header("Average Calories per Day")
+st.sidebar.line_chart(avg_per_day_df, x='date', y='average_calories')
+
+st.sidebar.header("Average Calories per Day of Week")
+# Replace with a suitable visualization (bar chart?)
+fig = px.bar(avg_per_weekday_df, x='day_of_week', y='average_calories') 
+
+# Display in Streamlit
+st.sidebar.plotly_chart(fig)   
+
 
 if follow_up_submit:
     follow_up_resp = get_gemini_resp(prompt=follow_up_query, image=input_image_setup(upload_file))

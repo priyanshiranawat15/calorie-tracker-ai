@@ -111,8 +111,8 @@ def store_calories():
             with conn.cursor() as cur:
                 cur.execute(
                     #deal with the conflict if the user already exists
-                    "INSERT INTO users (user_name, user_email, calories) VALUES (%s, %s, %s) ON CONFLICT (user_email) DO UPDATE SET calories = %s",
-                    (user_name, user_email, calories, calories)
+                    "INSERT INTO calories (user_email, calories) VALUES (%s, %s) ",
+                    (user_email, calories)
                     )
                 conn.commit()
 

@@ -85,7 +85,7 @@ def register():
 
         password = password.encode('utf-8')
         hashed_password = hashlib.sha256(password).hexdigest()
-        execute_query("INSERT INTO users (user_email, user_name , password) VALUES (%s, %s) ON CONFLICT(user_email) DO NOTHING", (email, name, hashed_password))
+        execute_query("INSERT INTO users (user_email, user_name , password) VALUES (%s, %s, %s) ON CONFLICT(user_email) DO NOTHING", (email, name, hashed_password))
 
         flash('Registration successful. Please log in.', 'success')
         return redirect(url_for('login'))
