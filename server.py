@@ -1,12 +1,15 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 import psycopg2
 from dotenv import load_dotenv
 import os
 import hashlib
+from flask_cors import CORS
 
 load_dotenv()  # Load environment variables
 
 app = Flask(__name__)
+CORS(app)
+app.secret_key = os.getenv("SECRET_KEY")
 
 # Database connection parameters
 DB_HOST = os.getenv("DB_HOST")
@@ -30,10 +33,11 @@ def get_db_connection():
 def register():
     if request.method == "POST":
         try:
-            data = request.get_json()
-            user_email = data.get("user_email")
-            user_password = data.get("user_password")
-
+            user_name = request.form.get("name")
+            user_email = request.form.get("email")
+            print(user_email)
+            user_password = request.form.get("password")
+            print(user_password)
             # safely store the password in the database
             user_password = hashlib.sha256(user_password.encode()).hexdigest()
 
@@ -42,11 +46,13 @@ def register():
                 with conn.cursor() as cur:
                     cur.execute(
                         #deal with the conflict if the user already exists
-                        f"INSERT INTO users (user_email, user_password) VALUES ('{str(user_email)}', '{str(user_password)}') ON CONFLICT (user_email) DO NOTHING"
+                        f"INSERT INTO users (user_name, user_email, password) VALUES ('{str(user_name)}','{str(user_email)}', '{str(user_password)}') ON CONFLICT (user_email) DO NOTHING"
                     )
                     conn.commit()
-            return jsonify({"success": True, "message": "User created successfully", "user_email": user_email})
+            print(jsonify({"success": True, "message": "User created successfully", "user_email": user_email}))
+            return redirect(url_for("login"))
         except Exception as e:
+            print(e)
             return jsonify({"success": False, "error": str(e)})
         
     return render_template("register.html")
@@ -56,9 +62,8 @@ def register():
 def login():
     if request.method == "POST":
         try:
-            data = request.get_json()
-            user_email = data.get("user_email")
-            user_password = data.get("user_password")
+            user_email = request.form.get("email")
+            user_password = request.form.get("password")
 
             # safely store the password in the database
             user_password = hashlib.sha256(user_password.encode()).hexdigest()
@@ -67,15 +72,20 @@ def login():
             with get_db_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        f"SELECT * FROM users WHERE user_email LIKE '{user_email}' AND user_password LIKE '{user_password}'"
+                        f"SELECT * FROM users WHERE user_email LIKE '{user_email}' AND password LIKE '{user_password}'"
                     )
                     user_info = cur.fetchone()
 
             if user_info:
-                return jsonify({"success": True, "message": "User authenticated successfully", "user_info": user_info})
+                # save the user info in the session
+                session["user_info"] = user_info
+
+                print(jsonify({"success": True, "message": "User authenticated successfully", "user_info": user_info}))
+                return redirect(url_for("home"))
             else:
                 return jsonify({"success": False, "message": "User authentication failed"})
         except Exception as e:
+            print(e)
             return jsonify({"success": False, "error": str(e)})
         
     return render_template("login.html")
@@ -95,7 +105,16 @@ def user_info(user_email):
         return jsonify({"success": True, "message": "User information retrieved successfully", "user_info": user_info})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@app.route("/", methods=["GET"])
+def home():
+    # check if already logged in
+    if "user_info" not in session:
+        return redirect(url_for("login"))
     
+    # if not logged in, redirect to login page
+
+    return render_template("index.html")  
 
 # Endpoint to store calories of user and update if already exists
 @app.route("/store_calories", methods=["POST"])
@@ -121,4 +140,4 @@ def store_calories():
         return jsonify({"success": False, "error": str(e)})
     
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

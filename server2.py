@@ -151,7 +151,6 @@ def store_calories():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
     
-
 @app.route('/dashboard')
 def dashboard():
     return 'Welcome to the Dashboard!'
